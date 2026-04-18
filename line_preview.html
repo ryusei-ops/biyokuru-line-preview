@@ -333,8 +333,9 @@
 <body>
 
 <div class="controls">
-  <button class="seg-btn active" onclick="switchSegment('A')">Seg A: 60〜99日</button>
-  <button class="seg-btn" onclick="switchSegment('B')">Seg B: 100日以上</button>
+  <button class="seg-btn active" data-seg="A" onclick="switchSegment('A')">Seg A: 60〜99日</button>
+  <button class="seg-btn" data-seg="B" onclick="switchSegment('B')">Seg B: 100日以上</button>
+  <button class="seg-btn" data-seg="C" onclick="switchSegment('C')">Seg C: 未受診</button>
   <button class="reset-btn" onclick="resetChat()">リセット</button>
 </div>
 
@@ -356,49 +357,37 @@
 <div class="info">
   <h3>操作方法</h3>
   <ul>
-    <li>上部のボタンでセグメントA/Bを切替</li>
-    <li>質問パネルのボタンをタップで2通目を確認</li>
+    <li>上部のボタンでセグメントA/B/Cを切替</li>
+    <li>A/B: 質問パネルをタップで返信を確認</li>
+    <li>C: 1メッセージ + 3CTAを並列提示</li>
     <li>「リセット」で最初から再生</li>
   </ul>
   <h3 style="margin-top:12px">遷移先URL</h3>
   <ul>
-    <li>再診LP: liff.line.me/...reservations</li>
-    <li>EC: biyokuru-ec.square.site</li>
+    <li>診察LP: liff.line.me/...reservations</li>
+    <li>ドクターズコスメ: docmee.jp/categories/doctors-cosme</li>
+    <li>美容サプリ: docmee.jp/categories/supplements</li>
+  </ul>
+  <h3 style="margin-top:12px">表示について</h3>
+  <ul>
+    <li>冒頭の「〇〇様」は本番配信時に友だちの表示名に置換されます</li>
   </ul>
 </div>
 
 <script>
-const DATA = {
-  A: {
-    msg1: `こんにちは、Biyokuruです。
+const RESERVE_URL = 'https://liff.line.me/2004848501-V0w3z9Gx?clinic_path=bs9dn4im&page=reservations';
+const COSME_URL = 'https://www.docmee.jp/categories/doctors-cosme';
+const SUPPLEMENT_URL = 'https://www.docmee.jp/categories/supplements';
 
-前回の受診から少しお時間が
-空きましたが、
-あのときの体重、
-維持できていますか？
-
-今の状況に近いものを
-タップしてください。`
-  },
-  B: {
-    msg1: `お久しぶりです、Biyokuruです。
-
-ダイエットを一度お休みしてから
-しばらく経ちましたが、
-今の体重に納得できていますか？
-
-今の状況に近いものを
-タップしてください。`
-  },
-  replies: {
-    maintain: {
-      user: '維持できてる',
-      bot: `素晴らしいです！
+const SHARED_REPLIES_AB = {
+  maintain: {
+    user: '維持できてる',
+    bot: `素晴らしいです！
 キープできていますね。
 
 実はBiyokuruでは、
-オンラインで本格的な
-美容アイテムもご購入いただけます。
+オンラインでドクターズコスメや
+美容サプリもご購入いただけます。
 
 内側・外側からのケアで、
 今のコンディションを
@@ -406,12 +395,14 @@ const DATA = {
 
 今後もぜひ、Biyokuruを
 よろしくお願いいたします。`,
-      cta: '美容アイテムを見る',
-      url: 'https://biyokuru-ec.square.site/'
-    },
-    slight: {
-      user: '少し戻ってきた',
-      bot: `そうでしたか、！
+    ctas: [
+      { label: 'ドクターズコスメを見る', url: COSME_URL },
+      { label: '美容サプリを見る', url: SUPPLEMENT_URL }
+    ]
+  },
+  slight: {
+    user: '少し戻ってきた',
+    bot: `そうでしたか、！
 元に戻さないためには、早めの再開がいちばん楽です。
 
 前回のカルテを引き継ぐので、
@@ -422,12 +413,12 @@ const DATA = {
 質問だけでも大丈夫です。
 
 お気軽にBiyokuruをご利用ください。`,
-      cta: '3分で再診を予約する',
-      url: 'https://liff.line.me/2004848501-V0w3z9Gx?clinic_path=bs9dn4im&page=reservations'
-    },
-    heavy: {
-      user: 'だいぶ戻ってしまった',
-      bot: `そうなんですね
+    cta: '3分で再診を予約する',
+    url: RESERVE_URL
+  },
+  heavy: {
+    user: 'だいぶ戻ってしまった',
+    bot: `そうなんですね
 また痩せたいという時は
 是非もう一度Biyokuruをご検討ください。
 
@@ -440,9 +431,75 @@ const DATA = {
 通院なしで再診できます。
 
 お気軽にご相談ください。`,
-      cta: '3分で再診を予約する',
-      url: 'https://liff.line.me/2004848501-V0w3z9Gx?clinic_path=bs9dn4im&page=reservations'
-    }
+    cta: '3分で再診を予約する',
+    url: RESERVE_URL
+  }
+};
+
+const AB_OPTIONS = [
+  { key: 'maintain', label: '維持できてる' },
+  { key: 'slight', label: '少し戻ってきた' },
+  { key: 'heavy', label: 'だいぶ戻ってしまった' }
+];
+
+const DATA = {
+  A: {
+    label: 'セグメントA（離脱60〜99日）',
+    flow: 'quickreply',
+    msg1: `〇〇様、こんにちは
+Biyokuruです。
+
+前回の受診から少しお時間が
+空きましたが、
+あのときの体重、
+維持できていますか？
+
+今の状況に近いものを
+タップしてください。`,
+    options: AB_OPTIONS,
+    replies: SHARED_REPLIES_AB
+  },
+  B: {
+    label: 'セグメントB（離脱100日以上）',
+    flow: 'quickreply',
+    msg1: `〇〇様、お久しぶりです
+Biyokuruです。
+
+ダイエットを一度お休みしてから
+しばらく経ちましたが、
+今の体重に納得できていますか？
+
+今の状況に近いものを
+タップしてください。`,
+    options: AB_OPTIONS,
+    replies: SHARED_REPLIES_AB
+  },
+  C: {
+    label: 'セグメントC（未受診・登録のみ）',
+    flow: 'directCta',
+    msg1: `〇〇様、こんにちは
+Biyokuruです！
+
+LINEにご登録いただいてから
+まだ受診が完了していませんが、
+ご受診はいかがですか？
+
+Biyokuruは、スマホで3分・通院なしで
+医師の診察からお薬のお届けまで
+オンラインで完結するクリニックです。
+
+ダイエット（GLP-1）を中心に、
+ドクターズコスメや美容サプリまで
+医師監修のアイテムを
+ご自宅にお届けしています。
+
+ご興味のあるものを
+タップしてみてください。`,
+    ctas: [
+      { label: '3分で診察を予約する', url: RESERVE_URL },
+      { label: 'ドクターズコスメを見る', url: COSME_URL },
+      { label: '美容サプリを見る', url: SUPPLEMENT_URL }
+    ]
   }
 };
 
@@ -451,11 +508,10 @@ let answered = false;
 
 function switchSegment(seg) {
   currentSeg = seg;
-  document.querySelectorAll('.seg-btn').forEach((b, i) => {
-    b.classList.toggle('active', (i === 0 && seg === 'A') || (i === 1 && seg === 'B'));
+  document.querySelectorAll('.seg-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.seg === seg);
   });
-  document.getElementById('seg-display').innerHTML =
-    seg === 'A' ? 'セグメントA（離脱60〜99日）' : 'セグメントB（離脱100日以上）';
+  document.getElementById('seg-display').textContent = DATA[seg].label;
   resetChat();
 }
 
@@ -475,32 +531,32 @@ function showInitial() {
   dl.innerHTML = '<span>4/17 (木)</span>';
   chat.appendChild(dl);
 
+  const seg = DATA[currentSeg];
+
   // Bot message 1
   setTimeout(() => {
-    addBotMessage(DATA[currentSeg].msg1, '12:15');
+    addBotMessage(seg.msg1, '12:15');
 
-    // Quick reply buttons
     setTimeout(() => {
-      const qr = document.createElement('div');
-      qr.className = 'quick-replies';
-      qr.id = 'qr-panel';
+      if (seg.flow === 'directCta') {
+        seg.ctas.forEach(c => addCta(c.label, c.url));
+        chat.scrollTop = chat.scrollHeight;
+      } else {
+        const qr = document.createElement('div');
+        qr.className = 'quick-replies';
+        qr.id = 'qr-panel';
 
-      const btns = [
-        { key: 'maintain', label: '維持できてる' },
-        { key: 'slight', label: '少し戻ってきた' },
-        { key: 'heavy', label: 'だいぶ戻ってしまった' }
-      ];
+        seg.options.forEach(b => {
+          const btn = document.createElement('button');
+          btn.className = 'qr-btn';
+          btn.textContent = b.label;
+          btn.onclick = () => handleReply(b.key);
+          qr.appendChild(btn);
+        });
 
-      btns.forEach(b => {
-        const btn = document.createElement('button');
-        btn.className = 'qr-btn';
-        btn.textContent = b.label;
-        btn.onclick = () => handleReply(b.key);
-        qr.appendChild(btn);
-      });
-
-      chat.appendChild(qr);
-      chat.scrollTop = chat.scrollHeight;
+        chat.appendChild(qr);
+        chat.scrollTop = chat.scrollHeight;
+      }
     }, 300);
   }, 400);
 }
@@ -509,20 +565,15 @@ function handleReply(key) {
   if (answered) return;
   answered = true;
 
-  const reply = DATA.replies[key];
+  const reply = DATA[currentSeg].replies[key];
   const chat = document.getElementById('chat');
 
-  // Disable buttons
   document.querySelectorAll('.qr-btn').forEach(b => b.classList.add('disabled'));
-
-  // User message
   addUserMessage(reply.user, '12:15');
 
-  // Typing indicator
   setTimeout(() => {
     const typing = document.createElement('div');
     typing.className = 'typing';
-    typing.id = 'typing';
     typing.innerHTML = `
       <div class="avatar">B</div>
       <div class="typing-dots"><span></span><span></span><span></span></div>
@@ -530,27 +581,31 @@ function handleReply(key) {
     chat.appendChild(typing);
     chat.scrollTop = chat.scrollHeight;
 
-    // Bot reply
     setTimeout(() => {
       typing.remove();
       addBotMessage(reply.bot, '12:15');
 
-      // CTA button
       setTimeout(() => {
-        const wrap = document.createElement('div');
-        wrap.className = 'cta-wrap';
-        const a = document.createElement('a');
-        a.className = 'cta-btn';
-        a.href = reply.url;
-        a.target = '_blank';
-        a.rel = 'noopener';
-        a.textContent = reply.cta + ' ▶';
-        wrap.appendChild(a);
-        chat.appendChild(wrap);
+        const ctas = reply.ctas || [{ label: reply.cta, url: reply.url }];
+        ctas.forEach(c => addCta(c.label, c.url));
         chat.scrollTop = chat.scrollHeight;
       }, 200);
     }, 1200);
   }, 500);
+}
+
+function addCta(label, url) {
+  const chat = document.getElementById('chat');
+  const wrap = document.createElement('div');
+  wrap.className = 'cta-wrap';
+  const a = document.createElement('a');
+  a.className = 'cta-btn';
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  a.textContent = label + ' ▶';
+  wrap.appendChild(a);
+  chat.appendChild(wrap);
 }
 
 function addBotMessage(text, time) {
