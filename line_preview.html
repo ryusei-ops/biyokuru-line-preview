@@ -335,7 +335,7 @@
 <div class="controls">
   <button class="seg-btn active" data-seg="A" onclick="switchSegment('A')">Seg A: 60〜99日</button>
   <button class="seg-btn" data-seg="B" onclick="switchSegment('B')">Seg B: 100日以上</button>
-  <button class="seg-btn" data-seg="C" onclick="switchSegment('C')">Seg C: 未受診</button>
+  <button class="seg-btn" data-seg="C" onclick="switchSegment('C')">Seg C: 未受信（14日〜リマインド）</button>
   <button class="reset-btn" onclick="resetChat()">リセット</button>
 </div>
 
@@ -357,9 +357,9 @@
 <div class="info">
   <h3>操作方法</h3>
   <ul>
-    <li>上部のボタンでセグメントA/B/Cを切替</li>
+    <li>上部のボタンでセグメントA/B/C/Dを切替</li>
     <li>A/B: 質問パネルをタップで返信を確認</li>
-    <li>C: 1メッセージ + 3CTAを並列提示</li>
+    <li>C: 登録14日/21日/28日の3通リマインドを時系列表示</li>
     <li>「リセット」で最初から再生</li>
   </ul>
   <h3 style="margin-top:12px">遷移先URL</h3>
@@ -480,33 +480,87 @@ Biyokuruです。
     replies: SHARED_REPLIES_AB
   },
   C: {
-    label: 'セグメントC（未受診・登録のみ）',
-    flow: 'directCta',
-    msg1: `〇〇様、こんにちは
-Biyokuruです！
+    label: 'セグメントC（未受信・登録後14日〜リマインド）',
+    flow: 'timeline',
+    sequence: [
+      {
+        date: '登録から14日後',
+        time: '12:15',
+        msg: `〇〇様、こんにちは
+Biyokuruです。
+
+診察のご予約を
+お忘れではありませんか？
 
 LINEにご登録いただいてから
-まだ受診いただけておりませんが、
-ご状況はいかがでしょうか？
-ご不明点などございましたら、
-こちらのLINEにいつでも
-ご連絡ください！
+2週間が経ちましたが、
+まだご予約を
+いただけていないようです。
 
-Biyokuruは、スマホで3分・通院なしで
-医師の診察からお薬のお届けまで
-オンラインで完結するサービスです。
+Biyokuruはスマホで3分、
+通院なしで医師の診察から
+お薬のお届けまで
+オンラインで完結します。
 
-ダイエット（GLP-1）を中心に、
-ドクターズコスメや美容サプリまで
-医師監修のアイテムを
-ご自宅にお届けしています。
+ご予約後のキャンセルも
+無料ですので、まずはお気軽に
+お試しください。`,
+        ctas: [
+          { label: '3分で診察を予約する', url: RESERVE_URL }
+        ]
+      },
+      {
+        date: '登録から21日後',
+        time: '12:15',
+        msg: `〇〇様、こんにちは
+Biyokuruです。
 
-ご興味のあるものを
-タップしてみてください。`,
-    ctas: [
-      { label: '3分で診察を予約する', url: RESERVE_URL },
-      { label: 'ドクターズコスメを見る', url: COSME_URL },
-      { label: '美容サプリを見る', url: SUPPLEMENT_URL }
+ダイエットを始めるタイミングは、
+なかなか踏ん切りがつかないですよね。
+
+Biyokuruをご利用の方からは、
+こんなお声をよくいただきます。
+
+・忙しくても無理なく続けられた
+・通院がなくストレスが少ない
+・想像より手軽に始められた
+
+「自分にも合うのかな？」と
+気になる点があれば、
+診察時に医師へ直接
+ご相談いただけます。
+
+ご質問だけでも歓迎です。`,
+        ctas: [
+          { label: '3分で診察を予約する', url: RESERVE_URL }
+        ]
+      },
+      {
+        date: '登録から28日後',
+        time: '12:15',
+        msg: `〇〇様
+
+ご登録から1ヶ月が経ちますが、
+お変わりございませんか？
+
+Biyokuruでは、GLP-1での
+ダイエット診療のほか、
+ドクターズコスメや美容サプリも
+オンラインでお届けしています。
+
+内側・外側どちらからでも
+美容のケアを始められますので、
+気になるものから覗いてみてください。
+
+ご不明点があれば、
+こちらのLINEからも
+お気軽にお問い合わせください。`,
+        ctas: [
+          { label: '3分で診察を予約する', url: RESERVE_URL },
+          { label: 'ドクターズコスメを見る', url: COSME_URL },
+          { label: '美容サプリを見る', url: SUPPLEMENT_URL }
+        ]
+      }
     ]
   }
 };
@@ -532,14 +586,18 @@ function resetChat() {
 
 function showInitial() {
   const chat = document.getElementById('chat');
+  const seg = DATA[currentSeg];
+
+  if (seg.flow === 'timeline') {
+    showTimeline();
+    return;
+  }
 
   // Date label
   const dl = document.createElement('div');
   dl.className = 'date-label';
   dl.innerHTML = '<span>4/17 (木)</span>';
   chat.appendChild(dl);
-
-  const seg = DATA[currentSeg];
 
   // Bot message 1
   setTimeout(() => {
@@ -567,6 +625,26 @@ function showInitial() {
       }
     }, 300);
   }, 400);
+}
+
+function showTimeline() {
+  const chat = document.getElementById('chat');
+  const seq = DATA[currentSeg].sequence;
+
+  seq.forEach((step) => {
+    const dl = document.createElement('div');
+    dl.className = 'date-label';
+    dl.innerHTML = `<span>${step.date}</span>`;
+    chat.appendChild(dl);
+
+    addBotMessage(step.msg, step.time);
+
+    if (step.ctas) {
+      step.ctas.forEach(c => addCta(c.label, c.url));
+    }
+  });
+
+  chat.scrollTop = chat.scrollHeight;
 }
 
 function handleReply(key) {
