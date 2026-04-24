@@ -335,7 +335,7 @@
 <div class="controls">
   <button class="seg-btn active" data-seg="A" onclick="switchSegment('A')">Seg A: 60〜99日</button>
   <button class="seg-btn" data-seg="B" onclick="switchSegment('B')">Seg B: 100日以上</button>
-  <button class="seg-btn" data-seg="C" onclick="switchSegment('C')">Seg C: 未受信（14日〜リマインド）</button>
+  <button class="seg-btn" data-seg="C" onclick="switchSegment('C')">Seg C: 未受診（14日〜リマインド）</button>
   <button class="reset-btn" onclick="resetChat()">リセット</button>
 </div>
 
@@ -480,7 +480,7 @@ Biyokuruです。
     replies: SHARED_REPLIES_AB
   },
   C: {
-    label: 'セグメントC（未受信・登録後14日〜リマインド）',
+    label: 'セグメントC（未受診・登録後14日〜リマインド）',
     flow: 'timeline',
     sequence: [
       {
