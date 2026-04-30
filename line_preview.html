@@ -440,6 +440,46 @@ const SHARED_REPLIES_AB = {
   }
 };
 
+// セグメントA 短縮版（最低限の絵文字つき）
+const REPLIES_A_SHORT = {
+  maintain: {
+    user: '維持できてる',
+    bot: `素晴らしいです✨
+しっかりキープできていますね。
+
+Biyokuruではドクターズコスメ・美容サプリもオンラインでお届け。
+
+内側・外側からのケアで、今のキレイをさらに。`,
+    ctas: [
+      { label: 'ドクターズコスメを見る', url: COSME_URL },
+      { label: '美容サプリを見る', url: SUPPLEMENT_URL }
+    ]
+  },
+  slight: {
+    user: '少し戻ってきた',
+    bot: `早めの再開が効果的です⏰
+
+スマホで3分、通院なしで再診OK。
+質問だけでも大丈夫です。
+
+下のボタンからご予約ください。`,
+    cta: '3分で再診を予約する',
+    url: RESERVE_URL
+  },
+  heavy: {
+    user: 'だいぶ戻ってしまった',
+    bot: `キープは本当に難しいですよね。
+
+Biyokuruなら前回の経過を引き継いで再スタート🔁
+ゼロからやり直す必要はありません。
+
+スマホで3分、通院なしで再診OK。
+お気軽にご相談ください。`,
+    cta: '3分で再診を予約する',
+    url: RESERVE_URL
+  }
+};
+
 const AB_OPTIONS = [
   { key: 'maintain', label: '維持できてる' },
   { key: 'slight', label: '少し戻ってきた' },
@@ -450,19 +490,14 @@ const DATA = {
   A: {
     label: 'セグメントA（離脱60〜99日）',
     flow: 'quickreply',
-    msg1: `〇〇様、こんにちは
+    msg1: `〇〇様、こんにちは🌿
 Biyokuruです。
 
-前回の受診から少しお時間が
-空きましたが、
-体調はいかがでしょうか？
-あのときの体重、
-維持できていますか？
+前回の受診から少し時間が空きましたが、体重はいかがですか？
 
-今の状況に近いものを
-お知らせいただけますと幸いです。`,
+今の状況に近いものをお選びください。`,
     options: AB_OPTIONS,
-    replies: SHARED_REPLIES_AB
+    replies: REPLIES_A_SHORT
   },
   B: {
     label: 'セグメントB（離脱100日以上）',
