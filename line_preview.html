@@ -558,6 +558,7 @@ function resetChat() {
 function showInitial() {
   const chat = document.getElementById('chat');
   const seg = DATA[currentSeg];
+  const segKey = currentSeg;
 
   if (seg.flow === 'timeline') {
     showTimeline();
@@ -572,9 +573,11 @@ function showInitial() {
 
   // Bot message 1
   setTimeout(() => {
+    if (currentSeg !== segKey) return;
     addBotMessage(seg.msg1, '12:15');
 
     setTimeout(() => {
+      if (currentSeg !== segKey) return;
       if (seg.flow === 'directCta') {
         seg.ctas.forEach(c => addCta(c.label, c.url));
         chat.scrollTop = chat.scrollHeight;
